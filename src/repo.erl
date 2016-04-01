@@ -29,11 +29,11 @@ query(Model, QList) -> pipe(Model, QList).
 %% === all/1,2,3 ===============================================================
 
 all(Q) ->
-    all_(fun pgpool:with/1, Q).
+    all_(fun epgpool:with/1, Q).
 all(C, Q) when is_pid(C) ->
     all_(wrap_connection(C), Q);
 all(Model, QList) ->
-    all_(fun pgpool:with/1, Model, QList).
+    all_(fun epgpool:with/1, Model, QList).
 all(C, Model, QList) when is_pid(C) ->
     all_(wrap_connection(C), Model, QList).
 
@@ -49,11 +49,11 @@ all_(FunC, Q) ->
 %% === zlist/2,3,4 =============================================================
 
 zlist(Q, FunZ) ->
-    zlist_(fun pgpool:transaction/1, Q, FunZ).
+    zlist_(fun epgpool:transaction/1, Q, FunZ).
 zlist(C, Q, FunZ) when is_pid(C) ->
     zlist_(wrap_connection(C), Q, FunZ);
 zlist(Model, QList, FunZ) ->
-    zlist_(fun pgpool:transaction/1, query(Model, QList), FunZ).
+    zlist_(fun epgpool:transaction/1, query(Model, QList), FunZ).
 zlist(C, Model, QList, FunZ) when is_pid(C) ->
     zlist_(wrap_connection(C), query(Model, QList), FunZ).
 
@@ -85,11 +85,11 @@ zlist(C, Statement, Portal, NRows, Constructor) ->
 %% === get_one/1,2,3 ===========================================================
 
 get_one(Q) ->
-    get_one_(fun pgpool:with/1, Q).
+    get_one_(fun epgpool:with/1, Q).
 get_one(C, Q) when is_pid(C) ->
     get_one_(wrap_connection(C), Q);
 get_one(Model, QList) ->
-    get_one_(fun pgpool:with/1, Model, QList).
+    get_one_(fun epgpool:with/1, Model, QList).
 get_one(C, Model, QList) when is_pid(C) ->
     get_one_(wrap_connection(C), Model, QList).
 
@@ -105,22 +105,23 @@ get_one_(FunC, Q) ->
 %% === insert/2,3 ===========================================================
 
 insert(Model, M) ->
-    insert_(fun pgpool:transaction/1, Model, M).
+    insert_(fun epgpool:transaction/1, Model, M).
 insert(C, Model, M) ->
     insert_(wrap_connection(C), Model, M).
 
 insert_(FunC, Model, M) ->
-    store(FunC, fun(_, Query) -> qsql:insert(Query) end, Model, M).
+    store(FunC, fun qsql:insert/1, Model, M).
 
 %% === update/2,3 ===========================================================
 
 update(Model, M) ->
-    update_(fun pgpool:transaction/1, Model, M).
+    update_(fun epgpool:transaction/1, Model, M).
 update(C, Model, M) when is_pid(C) ->
     update_(wrap_connection(C), Model, M).
 
 update_(FunC, Model, M) ->
-    store(FunC, fun(#{fields := Fields}, Query) ->
+    store(FunC, fun(Query) ->
+       #{fields := Fields} = q:schema(Query),
         Q = pipe(Query, [
             q:where(fun([Data|_]) ->
                 maps:fold(
@@ -136,14 +137,20 @@ update_(FunC, Model, M) ->
 %% === set/2,3 ===========================================================
 
 set(Model, QList) ->
-    set_(fun pgpool:transaction/1, Model, QList).
+    set_(fun epgpool:transaction/1, Model, QList).
 set(C, Model, QList) when is_pid(C) ->
     set_(wrap_connection(C), Model, QList).
 
 set_(FunC, Model, QList) ->
-    Schema = schema(Model),
-    Q = query(Schema, QList),
-    {Sql, Args, RFields} = to_sql(qsql:update(Q)),
+    Q = query(Model, QList),
+    #{fields := Fields} = q:schema(Q),
+    QR = q:set(fun(S, _) ->
+        maps:map(fun(K, V) ->
+            Type = maps:get(type, maps:get(K, Fields), undefined),
+            (encoder(Type))(V)
+        end, S)
+    end, Q),
+    {Sql, Args, RFields} = to_sql(qsql:update(QR)),
     Constructor = get_constructor(RFields),
     FunC(fun(C) ->
         case epgsql:equery(C, Sql, Args) of
@@ -155,11 +162,11 @@ set_(FunC, Model, QList) ->
 %% === delete/1,2,3 ===========================================================
 
 delete(Q) ->
-    delete_(fun pgpool:transaction/1, undefined, Q).
+    delete_(fun epgpool:transaction/1, undefined, Q).
 delete(C, Q) when is_pid(C) ->
     delete_(wrap_connection(C), undefined, Q);
 delete(Model, QList) ->
-    delete_(fun pgpool:transaction/1, Model, QList).
+    delete_(fun epgpool:transaction/1, Model, QList).
 delete(C, Model, QList) when is_pid(C) ->
     delete_(wrap_connection(C), Model, QList).
 
@@ -181,25 +188,9 @@ delete_(FunC, _Model, Q) ->
 %% =============================================================================
 
 pipe(Model, QList) when is_atom(Model); is_map(Model) ->
-    pipe(q:from(schema(Model)), QList);
+    pipe(q:from(Model), QList);
 pipe(Query, QList) ->
-    q:pipe(where(QList), Query).
-
-schema(Model) when is_atom(Model) ->
-    schema(Model:schema());
-schema(#{fields := Fields}=Schema) when is_map(Schema) ->
-    case maps:get(timestamp, Schema, false) of
-        true ->
-            Schema#{
-                fields => Fields#{
-                    timestamp => #{
-                        required => true,
-                        type => datetime
-                    }
-                }};
-        false ->
-            Schema#{timestamp => false}
-    end.
+    q:pipe(Query, where(QList)).
 
 where(QList) when is_list(QList) -> QList;
 where(Map) when is_map(Map) ->
@@ -219,16 +210,18 @@ store(FunC, SqlF, Model, DataMaybeList) ->
     end).
 
 store_(FunC, SqlF, Model, DataList) ->
-    #{fields := Fields} = Schema = schema(Model),
     Query = pipe(Model, [
-        q:set(fun(_) ->
-            maps:fold(
-                fun (_, #{readOnly := true}, S) -> S;
-                    (F, Opts, S) -> maps:put(F, {F, Opts}, S)
-                end, #{}, Fields)
-        end)
+        fun(Q) ->
+            #{fields := Fields} = q:schema(Q),
+            q:set(fun(_) ->
+                maps:fold(
+                    fun (_, #{readOnly := true}, S) -> S;
+                        (F, Opts, S) -> maps:put(F, {F, Opts}, S)
+                    end, #{}, Fields)
+            end, Q)
+        end
     ]),
-    {Sql, ArgsFields, ReturnFieldsData} = to_sql(SqlF(Schema, Query)),
+    {Sql, ArgsFields, ReturnFieldsData} = to_sql(SqlF(Query)),
     BeforeHook = get_hook(Model, before_save),
     AfterHook = get_hook(Model, after_save),
     Constructor = get_constructor(ReturnFieldsData),
@@ -259,8 +252,8 @@ get_constructor(FieldsData) when is_list(FieldsData) ->
                 FieldsConverters,
                 tuple_to_list(TupleData)))
     end;
-get_constructor(FieldOpts) ->
-    Decoder = decoder(maps:get(type, FieldOpts, undefined)),
+get_constructor(FieldType) ->
+    Decoder = decoder(FieldType),
     fun({V}) -> Decoder(V) end.
 
 data(FieldsData, M) ->
@@ -287,7 +280,7 @@ get_hook(Model, after_save) ->
 encoder(json) -> fun jiffy:encode/1;
 encoder(_) -> fun id/1.
 
-decoder(json) -> fun(V) -> jiffy:decode(V, [return_maps]) end;
+decoder(json) -> fun (null) -> null; (V) -> jiffy:decode(V, [return_maps]) end;
 decoder({record, FieldsData}) -> get_constructor(FieldsData);
 decoder({array, SubType}) ->
     TypeDecoder = decoder(SubType),
@@ -297,7 +290,7 @@ decoder(_) -> fun id/1.
 id(A) -> A.
 
 to_sql(QAst) ->
-    {Sql, Args} = qsql:from_ast(QAst),
+    {Sql, Args} = qast:to_sql(QAst),
     #{type := Fields} = qast:opts(QAst),
     {iolist_to_binary(Sql), Args, Fields}.
 
@@ -315,5 +308,5 @@ enumerate_error_writer_map(Fun, List) ->
     end.
 
 -spec wrap_connection(C) -> fun((fun((C) -> R)) -> R) when
-        C :: pgpool:connection().
+        C :: epgpool:connection().
 wrap_connection(C) -> fun(F) -> F(C) end.
