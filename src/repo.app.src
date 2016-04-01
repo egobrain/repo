@@ -1,16 +1,16 @@
 {application, repo,
- [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+ [
+  {description, "Postgresql equery repository"},
+  {vsn, git},
   {registered, []},
-  {mod, { repo_app, []}},
   {applications,
-   [kernel,
-    stdlib
+   [
+    kernel,
+    stdlib,
+    epgpool,
+    zlist
    ]},
-  {env,[]},
-  {modules, []},
-
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
+  {env, [
+      {fetch_by, 100}
+  ]}
  ]}.
