@@ -35,7 +35,7 @@ m_weather.erl
 schema() ->
     #{ fields => #{
            city => #{type => {varchar, 255}},
-	   temp_lo => #{type => integer},
+           temp_lo => #{type => integer},
            temp_hi => #{type => integer}
            prcp    => #{type => numeric}
        },
@@ -57,7 +57,7 @@ repl
 Notice
 ===
 
-```A =:= B``` or ```A < B eg```, or etc syntax is available through parse_transform.  
+```A =:= B``` or ```A < B```, or etc syntax is available through parse_transform.  
 It's also avaible in repl. But to use in inside modules you need to include  
 ```-include_lib("equer/include/equery.hrl").``` or use ```q:'=:='(A, B)``` syntax instead.
 Parse transform works only inside ```q``` callbacks.
