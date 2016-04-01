@@ -1,6 +1,6 @@
 {application, repo,
  [
-  {description, "Postgresql equery repository"},
+  {description, "Data mapper and and DSL for writing queries and interacting with PostgreSQL databases in Erlang"},
   {vsn, git},
   {registered, []},
   {applications,
