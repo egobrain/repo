@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/egobrain/repo.png?branch=master)](https://travis-ci.org/egobrain/repo.png?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/egobrain/repo/badge.svg?branch=master)](https://coveralls.io/github/egobrain/repo?br$
+[![GitHub tag](https://img.shields.io/github/tag/egobrain/repo.svg)](https://github.com/egobrain/repo)
+[![Hex.pm](https://img.shields.io/hexpm/v/repo.svg)](https://hex.pm/packages/repo)
+
 Repo
 =====
 

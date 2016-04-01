@@ -13,5 +13,8 @@
    ]},
   {env, [
       {fetch_by, 100}
-  ]}
+  ]},
+  {maintainers, ["Yakov Kozlov"]},
+  {licenses, ["MIT"]},
+  {links, [{"Github", "https://github.com/egobrain/repo"}]}
  ]}.
