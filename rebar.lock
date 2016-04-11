@@ -8,7 +8,7 @@
   1},
  {<<"equery">>,
   {git,"git://github.com/egobrain/equery",
-       {ref,"1480edad04112f30f90d1f5f7026e6b1baea3803"}},
+       {ref,"9200c6604133fcc08d60b1965ac22fc7d6253512"}},
   0},
  {<<"goldrush">>,
   {git,"git://github.com/DeadZen/goldrush.git",

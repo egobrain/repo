@@ -66,7 +66,7 @@ zlist_test(_Config) ->
     ] = repo:zlist(m_user, [], fun zlist:to_list/1).
 
 single_item_test(_Config) ->
-    {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> q:max(Id) end)]).
+    {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> pg:max(Id) end)]).
 
 get_one_test(_Config) ->
     {ok, #{login := <<"Sam">>}} =

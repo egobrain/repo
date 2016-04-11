@@ -121,7 +121,7 @@ update(C, Model, M) when is_pid(C) ->
 
 update_(FunC, Model, M) ->
     store(FunC, fun(Query) ->
-       #{fields := Fields} = q:schema(Query),
+       #{fields := Fields} = q:get(schema, Query),
         Q = pipe(Query, [
             q:where(fun([Data|_]) ->
                 maps:fold(
@@ -143,7 +143,7 @@ set(C, Model, QList) when is_pid(C) ->
 
 set_(FunC, Model, QList) ->
     Q = query(Model, QList),
-    #{fields := Fields} = q:schema(Q),
+    #{fields := Fields} = q:get(schema, Q),
     QR = q:set(fun(S, _) ->
         maps:map(fun(K, V) ->
             Type = maps:get(type, maps:get(K, Fields), undefined),
@@ -212,7 +212,7 @@ store(FunC, SqlF, Model, DataMaybeList) ->
 store_(FunC, SqlF, Model, DataList) ->
     Query = pipe(Model, [
         fun(Q) ->
-            #{fields := Fields} = q:schema(Q),
+            #{fields := Fields} = q:get(schema, Q),
             q:set(fun(_) ->
                 maps:fold(
                     fun (_, #{readOnly := true}, S) -> S;
