@@ -15,7 +15,8 @@
          query_test/1,
          preload_test/1,
          set_test/1,
-         hooks_test/1
+         hooks_test/1,
+         errors_test/1
         ]).
 
 -include_lib("common_test/include/ct.hrl").
@@ -39,7 +40,8 @@ all() ->
      query_test,
      preload_test,
      set_test,
-     hooks_test
+     hooks_test,
+     errors_test
     ].
 
 all_test(_Config) ->
@@ -55,7 +57,21 @@ all_test(_Config) ->
      #{ id := 2, login := <<"Mike">>}
     ] = repo:all(m_user, [
         q:where(fun([#{id := Id}]) -> Id < 3 end)
-    ]).
+    ]),
+
+    QList = [
+        q:order_by(fun([#{id := Id}]) -> [{Id, asc}] end),
+        q:limit(1)
+    ],
+    Q = repo:query(m_user, QList),
+
+    [
+     #{ id := 1 }
+    ] = epgpool:with(fun(C) -> repo:all(C, Q) end),
+
+    [
+     #{ id := 1 }
+    ] = epgpool:with(fun(C) -> repo:all(C, m_user, QList) end).
 
 zlist_test(_Config) ->
     [
@@ -63,7 +79,25 @@ zlist_test(_Config) ->
      #{ id := 2, login := <<"Mike">>},
      #{ id := 3, login := <<"Joe">>},
      #{ id := 4, login := <<"Elis">>}
-    ] = repo:zlist(m_user, [], fun zlist:to_list/1).
+    ] = repo:zlist(m_user, [], fun zlist:to_list/1),
+
+    QList = [
+        q:order_by(fun([#{id := Id}]) -> [{Id, asc}] end),
+        q:limit(1)
+    ],
+    Q = repo:query(m_user, QList),
+
+    [
+     #{ id := 1 }
+    ] = repo:zlist(Q, fun zlist:to_list/1),
+
+    [
+     #{ id := 1 }
+    ] = epgpool:transaction(fun(C) -> repo:zlist(C, Q, fun zlist:to_list/1) end),
+
+    [
+     #{ id := 1 }
+    ] = epgpool:transaction(fun(C) -> repo:zlist(C, m_user, QList, fun zlist:to_list/1) end).
 
 single_item_test(_Config) ->
     {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> pg:max(Id) end)]).
@@ -71,22 +105,53 @@ single_item_test(_Config) ->
 get_one_test(_Config) ->
     {ok, #{login := <<"Sam">>}} =
         repo:get_one(m_user, #{id => 1, unknwon => <<"must be ignored">>}),
-    {error, not_found} = repo:get_one(m_user, #{id => -1}).
+    {error, not_found} = repo:get_one(m_user, #{id => -1}),
+    Q = repo:query(m_user, #{id => 1}),
+    {ok, _} = repo:get_one(Q),
+    {ok, _} = epgpool:with(fun(C) -> repo:get_one(C, Q) end),
+    {ok, _} = epgpool:with(fun(C) -> repo:get_one(C, m_user, #{id => 1}) end).
 
 insert_test(_Config) ->
     {ok, [#{id := Id, login := <<"Yakov">>}=U]} =
          repo:insert(m_user, [#{login => <<"Yakov">>, id => <<"ignored">>}]),
-    {ok, U} = repo:get_one(m_user, #{id => Id}).
+    {ok, U} = repo:get_one(m_user, #{id => Id}),
+    {ok, [#{id := _}, #{id := _}]} = epgpool:with(fun(C) ->
+         repo:insert(C, m_user, [
+             #{login => <<"insert1">>},
+             #{login => <<"insert2">>}
+         ])
+    end).
 
 update_test(_Config) ->
     Text = <<"Sql is a great thing!">>,
-    {ok, C} = repo:get_one(m_comment, #{id => 1}),
-    {ok, #{text := Text}} = repo:update(m_comment, C#{text := Text}),
-    {ok, #{text := Text}} = repo:get_one(m_comment, #{id => 1}).
+    {ok, Comment} = repo:get_one(m_comment, #{id => 1}),
+    {ok, #{text := Text}} = repo:update(m_comment, Comment#{text := Text}),
+    {ok, #{text := Text}} = repo:get_one(m_comment, #{id => 1}),
+
+    Text2 = <<"Sql is a great thing!!!">>,
+    {ok, #{text := Text2}} =
+        epgpool:transaction(fun(C) ->
+            repo:update(C, m_comment, Comment#{text := Text2})
+        end),
+    {ok, #{text := Text2}} = repo:get_one(m_comment, #{id => 1}).
 
 delete_test(_Config) ->
     [#{id := 3}] = repo:delete(m_user, #{id => 3}),
-    {error, not_found} = repo:get_one(m_user, #{id => 3}).
+    {error, not_found} = repo:get_one(m_user, #{id => 3}),
+    {ok, U1} = repo:insert(m_user, #{login => <<"to delete 1">>}),
+    [U1] = epgpool:with(fun(C) -> repo:delete(C, m_user, U1) end),
+    {ok, U2} = repo:insert(m_user, #{login => <<"to delete 2">>}),
+    Q = repo:query(m_user, [
+        q:where(fun([#{login := Login}]) -> Login =:= <<"to delete 2">> end)
+    ]),
+    [U2] = repo:delete(Q),
+    [] = repo:delete(Q),
+
+    {ok, U3} = repo:insert(m_user, #{login => <<"to delete 3">>}),
+    Q2 = repo:query(m_user, [
+        q:where(fun([#{login := Login}]) -> Login =:= <<"to delete 3">> end)
+    ]),
+    [U3] = epgpool:with(fun(C) -> repo:delete(C, Q2) end).
 
 query_test(_Config) ->
     Q = repo:query(m_user),
@@ -102,7 +167,18 @@ set_test(_Config) ->
     [#{meta := #{<<"type">> := <<"comment">>}}|_] =
         repo:set(m_comment, [
             q:set(fun(_) -> #{meta => #{'type' => comment}} end)
-        ]).
+        ]),
+    [#{meta := #{<<"type">> := <<"comment">>}}|_] =
+        epgpool:transaction(fun(C) ->
+            repo:set(C, m_comment, [
+                q:set(fun(_) -> #{meta => #{'type' => comment}} end)
+            ])
+        end),
+    [] = repo:set(m_comment, [
+        q:set(fun(_) -> #{meta => #{'type' => comment}} end),
+        q:where(fun([#{id := Id}]) -> Id > 999 end)
+    ]).
+
 
 preload_test(_Config) ->
     [
@@ -117,7 +193,7 @@ preload_test(_Config) ->
          comments := [
              #{
                  id := 1,
-                 text := <<"Sql is a great thing!">>,
+                 text := <<"Sql is a great thing!!!">>,
                  author := #{
                      login := <<"Mike">>
                  }
@@ -173,3 +249,23 @@ hooks_test(_Config) ->
     {ok, M} = repo:insert(m_user, Model),
     {'before', Model} = receive D1 -> D1 after 1000 -> throw(timeout) end,
     {'after', M} = receive D2 -> D2 after 1000 -> throw(timeout) end.
+
+
+errors_test(_Config) ->
+    try
+        must_throw_exception = repo:zlist(m_user, [
+            q:select(fun(_) -> #{id => qast:raw(<<"bad sql">>)} end)
+        ], fun zlist:to_list/1)
+    catch throw:{pgsql_exec_error, _} -> ok
+    end,
+
+    try
+        must_throw_exception = repo:get_one(m_user, [])
+    catch throw:{multiple_result, _} -> ok
+    end,
+
+    {error, duplicate} = repo:insert(m_user, #{login => <<"Sam">>}),
+    {error, [{1, duplicate}]} = repo:insert(m_user, [#{login => <<"Sam">>}]),
+    {error, _} = repo:insert(m_user, #{}),
+
+    {error, not_found} = repo:update(m_user, #{id => 999, login => <<"Samson">>}).

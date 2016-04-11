@@ -63,11 +63,14 @@ zlist_(FunC, Q, FunZ) ->
     Portal = io_lib:print(make_ref()),
     {ok, NRows} = application:get_env(repo, fetch_by),
     FunC(fun(C) ->
-        {ok, Statement} = epgsql:parse(C, Sql),
-        ok = epgsql:bind(C, Statement, Portal, Args),
-        epgsql:equery(C, Sql, Args),
-        try FunZ(zlist(C, Statement, Portal, NRows, Constructor))
-        after ok = epgsql:sync(C)
+        case epgsql:parse(C, Sql) of
+            {ok, Statement} ->
+                ok = epgsql:bind(C, Statement, Portal, Args),
+                epgsql:equery(C, Sql, Args),
+                try FunZ(zlist(C, Statement, Portal, NRows, Constructor))
+                after ok = epgsql:sync(C)
+                end;
+            {error, R} -> throw({pgsql_exec_error, R})
         end
     end).
 
@@ -237,7 +240,7 @@ store_(FunC, SqlF, Model, DataList) ->
                     {ok, Result};
                 ({error, #error{code = <<"23505">>,codename=unique_violation}}) ->
                     {error, duplicate};
-                ({error, duplicate}=Err) -> Err
+                ({error, _Reason}=Err) -> Err
             end, QueryResult)
     end).
 
