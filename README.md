@@ -59,7 +59,7 @@ Notice
 
 ```A =:= B``` or ```A < B```, or etc syntax is available through parse_transform.  
 It's also avaible in repl. But to use in inside modules you need to include  
-```-include_lib("equer/include/equery.hrl").``` or use ```q:'=:='(A, B)``` syntax instead.
+```-include_lib("equer/include/equery.hrl").``` or use ```pg:'=:='(A, B)``` syntax instead.
 Parse transform works only inside ```q``` callbacks.
 
 More documentation will be later...
@@ -67,8 +67,8 @@ More documentation will be later...
 TODO
 ===
 
-- [x] common tests
-- [ ] 100% coverge
+- [x] ~~common tests~~
+- [x] ~~100% coverge~~
 - [ ] spec
 - [ ] docs
 - [ ] examples
