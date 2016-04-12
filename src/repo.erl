@@ -270,15 +270,17 @@ data(FieldsData, M) ->
     end, FieldsData).
 
 get_hook(Model, before_save) ->
-    case erlang:function_exported(Model, before_save, 2) of
-        true -> fun Model:before_save/2;
-        false -> fun(_, M) -> M end
-    end;
+    Module = case erlang:function_exported(Model, before_save, 2) of
+        true -> Model;
+        false -> repo_model
+    end,
+    fun Module:before_save/2;
 get_hook(Model, after_save) ->
-    case erlang:function_exported(Model, after_save, 2) of
-        true -> fun Model:after_save/2;
-        false -> fun(_, _) -> ok end
-    end.
+    Module = case erlang:function_exported(Model, after_save, 2) of
+        true -> Model;
+        false -> repo_model
+    end,
+    fun Module:after_save/2.
 
 encoder(json) -> fun jiffy:encode/1;
 encoder(_) -> fun id/1.
