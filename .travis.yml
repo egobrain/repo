@@ -4,7 +4,6 @@ before_install:
 install: "true"
 language: erlang
 otp_release:
-  - 18.2.1
-  - 17.5
+  - 18.3
 script:
   - ./rebar3 do xref,ct,dialyzer,coveralls send
