@@ -225,12 +225,13 @@ store_(FunC, SqlF, Model, DataList) ->
         end
     ]),
     {Sql, ArgsFields, ReturnFieldsData} = to_sql(SqlF(Query)),
-    BeforeHook = get_hook(Model, before_save),
-    AfterHook = get_hook(Model, after_save),
+    BeforeHook = get_hook(Model, before_save, 2),
+    AfterHook = get_hook(Model, after_save, 2),
+    ToDb = get_hook(Model, to_db, 1),
     Constructor = get_constructor(ReturnFieldsData),
     FunC(fun(C) ->
         {ok, S} = epgsql:parse(C, Sql),
-        QueryData = [{S, data(ArgsFields, BeforeHook(C, M))} || M <- DataList],
+        QueryData = [{S, data(ArgsFields, ToDb(BeforeHook(C, M)))} || M <- DataList],
         QueryResult = epgsql:execute_batch(C, QueryData),
         enumerate_error_writer_map(
             fun ({ok, 0}) -> {error, not_found};
@@ -244,15 +245,17 @@ store_(FunC, SqlF, Model, DataList) ->
             end, QueryResult)
     end).
 
-get_constructor(FieldsData) when is_list(FieldsData) ->
-    FieldsConverters = [
-        {F, decoder(maps:get(type, Opts, undefined))} || {F, Opts} <- FieldsData
-    ],
+get_constructor({model, Model, FieldsData}) when is_list(FieldsData) ->
+    {Fields, FieldsOpts} = lists:unzip(FieldsData),
+    Decoders = lists:map(fun(Opts) ->
+        decoder(maps:get(type, Opts, undefined))
+    end, FieldsOpts),
+    FromDb = (get_hook(Model, from_db, 1))(Fields),
     fun(TupleData) ->
-        maps:from_list(
+        FromDb(
             lists:zipwith(
-                fun({F,C}, D) -> {F, C(D)} end,
-                FieldsConverters,
+                fun(C, D) -> C(D) end,
+                Decoders,
                 tuple_to_list(TupleData)))
     end;
 get_constructor(FieldType) ->
@@ -269,18 +272,12 @@ data(FieldsData, M) ->
         end
     end, FieldsData).
 
-get_hook(Model, before_save) ->
-    Module = case erlang:function_exported(Model, before_save, 2) of
+get_hook(Model, Name, Arity) ->
+    Module = case erlang:function_exported(Model, Name, Arity) of
         true -> Model;
         false -> repo_model
     end,
-    fun Module:before_save/2;
-get_hook(Model, after_save) ->
-    Module = case erlang:function_exported(Model, after_save, 2) of
-        true -> Model;
-        false -> repo_model
-    end,
-    fun Module:after_save/2.
+    fun Module:Name/Arity.
 
 encoder(json) -> fun jiffy:encode/1;
 encoder(_) -> fun id/1.

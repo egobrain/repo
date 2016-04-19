@@ -38,7 +38,9 @@ preload(Link, QList, Q) ->
             end)
         ]),
         SubQ2 = q:pipe(SubQ, QList),
-        SubQR = q:select(fun(SubSelect, _Data) -> pg:row(SubSelect) end, SubQ2),
+        SubSchema = q:get(schema, SubQ2),
+        SubModel = maps:get(model, SubSchema, undefined),
+        SubQR = q:select(fun(SubSelect, _Data) -> pg:row(SubModel, SubSelect) end, SubQ2),
         Exp = qsql:select(SubQR),
         LinkExp =
             case LinkType of
