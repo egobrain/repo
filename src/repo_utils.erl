@@ -33,14 +33,14 @@ preload(Link, QList, Q) ->
         SubQ = q:pipe(q:from(Info), [
             q:where(fun([LinkD|_]) ->
                 maps:fold(fun(MField, LinkField, S) ->
-                    S andalso pg:'=:='(maps:get(MField, MD), maps:get(LinkField, LinkD))
+                    S andalso pg_sql:'=:='(maps:get(MField, MD), maps:get(LinkField, LinkD))
                 end, true, IdsMap)
             end)
         ]),
         SubQ2 = q:pipe(SubQ, QList),
         SubSchema = q:get(schema, SubQ2),
         SubModel = maps:get(model, SubSchema, undefined),
-        SubQR = q:select(fun(SubSelect, _Data) -> pg:row(SubModel, SubSelect) end, SubQ2),
+        SubQR = q:select(fun(SubSelect, _Data) -> pg_sql:row(SubModel, SubSelect) end, SubQ2),
         Exp = qsql:select(SubQR),
         LinkExp =
             case LinkType of

@@ -102,7 +102,7 @@ zlist_test(_Config) ->
     ] = epgpool:transaction(fun(C) -> repo:zlist(C, m_user, QList, fun zlist:to_list/1) end).
 
 single_item_test(_Config) ->
-    {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> pg:max(Id) end)]).
+    {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> pg_sql:max(Id) end)]).
 
 get_one_test(_Config) ->
     {ok, #user{login = <<"Sam">>}} =
