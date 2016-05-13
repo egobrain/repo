@@ -30,7 +30,7 @@ preload(Link, QList, Q) ->
     #{links := Links} = q:get(schema, Q),
     q:select(fun(Select, [MD|_]) ->
         {LinkType, Info, IdsMap} = maps:get(Link, Links),
-        SubQ = q:pipe(q:from(Info), [
+        SubQ = repo:query(Info, [
             q:where(fun([LinkD|_]) ->
                 maps:fold(fun(MField, LinkField, S) ->
                     S andalso pg_sql:'=:='(maps:get(MField, MD), maps:get(LinkField, LinkD))
