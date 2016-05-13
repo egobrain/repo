@@ -8,6 +8,7 @@
          zlist/2, zlist/3, zlist/4,
          get_one/1, get_one/2, get_one/3,
          insert/2, insert/3,
+         upsert/2, upsert/3,
          update/2, update/3,
          set/2, set/3,
          delete/1, delete/2, delete/3
@@ -114,6 +115,16 @@ insert(C, Model, M) ->
 
 insert_(FunC, Model, M) ->
     store(FunC, fun qsql:insert/1, Model, M).
+
+%% === upsert/2,3 ===========================================================
+
+upsert(Model, M) ->
+    upsert_(fun epgpool:transaction/1, Model, M).
+upsert(C, Model, M) ->
+    upsert_(wrap_connection(C), Model, M).
+
+upsert_(FunC, Model, M) ->
+    store(FunC, fun qsql:upsert/1, Model, M).
 
 %% === update/2,3 ===========================================================
 

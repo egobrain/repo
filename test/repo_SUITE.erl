@@ -10,6 +10,7 @@
          single_item_test/1,
          get_one_test/1,
          insert_test/1,
+         upsert_test/1,
          update_test/1,
          delete_test/1,
          query_test/1,
@@ -37,6 +38,7 @@ all() ->
      single_item_test,
      get_one_test,
      insert_test,
+     upsert_test,
      update_test,
      delete_test,
      query_test,
@@ -121,6 +123,19 @@ insert_test(_Config) ->
          repo:insert(C, m_user, [
              #user{ login = <<"insert1">>},
              #user{ login = <<"insert2">>}
+         ])
+    end).
+
+upsert_test(_Config) ->
+    {ok, [#{id := Id, value := <<"up_created">>}=U]} =
+         repo:upsert(m_setting, [#{id => 1, value => <<"up_created">>}]),
+    {ok, U} = repo:get_one(m_setting, #{id => Id}),
+    UpdatedU = U#{ value => <<"up_upsert">> },
+    NewU = #{ id => 2, value => <<"up_insert">> },
+    {ok, [UpdatedU, #{value := <<"up_insert">>}]} = epgpool:with(fun(C) ->
+         repo:upsert(C, m_setting, [
+             UpdatedU,
+             NewU
          ])
     end).
 

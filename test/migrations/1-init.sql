@@ -34,3 +34,8 @@ insert into comments(text, author_id, post_id) values
 ('What is sql?', 4, 1),
 ('Teasty?', 1, 3),
 ('Great!', 4, 3);
+
+create table kv(
+   "id" integer primary key,
+   "value" varchar(255) not null
+);
