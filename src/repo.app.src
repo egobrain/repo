@@ -16,5 +16,8 @@
   ]},
   {maintainers, ["Yakov Kozlov"]},
   {licenses, ["MIT"]},
-  {links, [{"Github", "https://github.com/egobrain/repo"}]}
+  {links, [
+    {"Github", "https://github.com/egobrain/repo"},
+    {"Blog", "http://www.egobrain.ru/blog/2016/06/02/erlang-orm-part-3"}
+  ]}
  ]}.
