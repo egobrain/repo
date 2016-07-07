@@ -9,7 +9,9 @@
     stdlib,
     lager,
     epgpool,
-    zlist
+    equery,
+    zlist,
+    jiffy
    ]},
   {env, [
       {fetch_by, 100}
