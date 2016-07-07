@@ -81,7 +81,7 @@ zlist(C, Statement, Portal, NRows, Constructor) ->
             throw({pgsql_exec_error, R});
         {partial, Rows} ->
             ZList = zlist:map(Constructor, zlist:from_list(Rows)),
-            zlist:append(ZList, zlist(C, Statement, Portal, NRows, Constructor));
+            zlist:append(ZList, fun() -> (zlist(C, Statement, Portal, NRows, Constructor))() end);
         {ok, []} -> zlist:empty();
         {ok, Rows} -> zlist:map(Constructor, zlist:from_list(Rows))
     end.
