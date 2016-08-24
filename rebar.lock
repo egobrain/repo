@@ -1,6 +1,6 @@
 [{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.0.1">>},0},
  {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.2.0">>},1},
- {<<"equery">>,{pkg,<<"equery">>,<<"0.6.1">>},0},
+ {<<"equery">>,{pkg,<<"equery">>,<<"0.8.1">>},0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.7">>},1},
  {<<"jiffy">>,{pkg,<<"jiffy">>,<<"0.14.7">>},0},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.0.2">>},0},
