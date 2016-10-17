@@ -262,12 +262,13 @@ get_constructor({model, Model, FieldsData}) when is_list(FieldsData) ->
         decoder(maps:get(type, Opts, undefined))
     end, FieldsOpts),
     FromDb = (get_hook(Model, from_db, 1))(Fields),
-    fun(TupleData) ->
+    fun(TupleData) when is_tuple(TupleData) ->
         FromDb(
             lists:zipwith(
                 fun(C, D) -> C(D) end,
                 Decoders,
-                tuple_to_list(TupleData)))
+                tuple_to_list(TupleData)));
+       (null) -> null
     end;
 get_constructor(FieldType) ->
     Decoder = decoder(FieldType),
