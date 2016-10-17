@@ -1,5 +1,5 @@
 {"1.1.0",
-[{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.0.1">>},0},
+[{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.0.2">>},0},
  {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.2.0">>},1},
  {<<"equery">>,{pkg,<<"equery">>,<<"0.9.1">>},0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.8">>},1},
@@ -9,7 +9,7 @@
  {<<"zlist">>,{pkg,<<"zlist">>,<<"1.0.3">>},0}]}.
 [
 {pkg_hash,[
- {<<"epgpool">>, <<"6017A4A6CF2ADB598762CE496B976C79E8859F0AED8C10A3300632D66EC79FAD">>},
+ {<<"epgpool">>, <<"03AB0FBA28540F6CBBE974BC891B1872BBD597E8123910EB7786CC1EF34C485B">>},
  {<<"epgsql">>, <<"2277244364628CCFC271A843F4B014729D0799BCB99B70C2216BCFD6DD6B409E">>},
  {<<"equery">>, <<"11EFDAE4186BC168370C64FF33522AC0EEAA4F855B65C9D06E499B6AC6656175">>},
  {<<"goldrush">>, <<"2024BA375CEEA47E27EA70E14D2C483B2D8610101B4E852EF7F89163CDB6E649">>},
