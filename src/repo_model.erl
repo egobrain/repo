@@ -9,7 +9,10 @@
 -optional_callbacks([after_save/2]).
 
 -callback from_db([FieldNames :: atom()]) -> fun((Data :: [any()]) -> Model :: any()).
+-optional_callbacks([from_db/1]).
+
 -callback to_db(Model :: any()) -> DbModel :: #{ atom() => any() }.
+-optional_callbacks([to_db/1]).
 
 -export([
          before_save/2,
