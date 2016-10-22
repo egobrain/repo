@@ -1,6 +1,7 @@
 create table users (
    id serial primary key,
-   login varchar(255) UNIQUE not null
+   login varchar(255) UNIQUE not null,
+   tag text
 );
 
 create table posts(

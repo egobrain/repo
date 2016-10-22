@@ -23,7 +23,7 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("equery/include/equery.hrl").
 
--record(user, {id, login}).
+-record(user, {id, login, tag = null}).
 
 init_per_suite(Config)  ->
     Config.
@@ -124,7 +124,10 @@ insert_test(_Config) ->
              #user{ login = <<"insert1">>},
              #user{ login = <<"insert2">>}
          ])
-    end).
+    end),
+    {ok, []} = repo:insert(m_user, []),
+    {error, r1} = repo:insert(m_user, #user{login = <<"Yk">>}, #{error => r1}),
+    {error, [{1, r1}]} = repo:insert(m_user, [#user{login = <<"Yk">>}], #{error => r1}).
 
 upsert_test(_Config) ->
     {ok, [#{id := Id, value := <<"up_created">>}=U]} =
@@ -153,6 +156,7 @@ update_test(_Config) ->
     {ok, #{text := Text2}} = repo:get_one(m_comment, #{id => 1}).
 
 delete_test(_Config) ->
+    {error, r2} = repo:delete(m_user, #{id => 3}, #{error => r2}),
     {ok, [#user{id = 3}]} = repo:delete(m_user, #{id => 3}),
     {error, not_found} = repo:get_one(m_user, #{id => 3}),
     {ok, #user{id=U1Id}=U1} = repo:insert(m_user, #user{login = <<"to delete 1">>}),

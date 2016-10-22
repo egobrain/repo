@@ -6,23 +6,33 @@
          before_save/3,
          after_save/4,
 
+         before_delete/3,
+
          from_db/1,
          to_db/1
         ]).
 
--record(user, {id, login}).
+-record(user, {id, login, tag = null}).
 
 schema() ->
     #{ fields => #{
            id => #{type => integer, required => true, index => true, readOnly => true},
-           login => #{type => {varchar, 255}, required => true}
+           login => #{type => {varchar, 255}, required => true},
+           tag => #{type => text}
        },
        table => <<"users">>
     }.
 
+before_save(_C, _Model, #{error := Reason}) ->
+    {error, Reason};
 before_save(_C, Model, _HookOpts) ->
     catch (test_srv ! {'before', Model}),
     {ok, Model}.
+
+before_delete(_C, _Q, #{error := Reason}) ->
+    {error, Reason};
+before_delete(C, Q, HookOpts) ->
+    repo_model:before_delete(C, Q, HookOpts).
 
 after_save(_C, _BeforeModel, AfterModel, _HookOpts) ->
     catch (test_srv ! {'after', AfterModel}),
@@ -31,7 +41,8 @@ after_save(_C, _BeforeModel, AfterModel, _HookOpts) ->
 from_db(Fields) ->
     Map = #{
         id => #user.id,
-        login => #user.login
+        login => #user.login,
+        tag => #user.tag
     },
     Ids = [maps:get(F, Map) || F <- Fields],
     fun(Values) ->

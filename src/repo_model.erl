@@ -35,7 +35,6 @@ after_save(_C, _BeforeModel, AfterModel, _HookOpts) -> AfterModel.
 before_delete(_C, Q, _HookOpts) -> {ok, Q}.
 after_delete(_C, DeletedModel, _HookOpts) -> DeletedModel.
 
-
 from_db(Fields) -> fun(Values) -> maps:from_list(lists:zip(Fields, Values)) end.
 
 to_db(Model) -> Model.
