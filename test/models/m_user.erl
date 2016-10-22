@@ -3,8 +3,8 @@
 
 -export([
          schema/0,
-         before_save/2,
-         after_save/2,
+         before_save/3,
+         after_save/4,
 
          from_db/1,
          to_db/1
@@ -20,13 +20,13 @@ schema() ->
        table => <<"users">>
     }.
 
-before_save(_C, Model) ->
+before_save(_C, Model, _HookOpts) ->
     catch (test_srv ! {'before', Model}),
-    Model.
+    {ok, Model}.
 
-after_save(_C, Model) ->
-    catch (test_srv ! {'after', Model}),
-    ok.
+after_save(_C, _BeforeModel, AfterModel, _HookOpts) ->
+    catch (test_srv ! {'after', AfterModel}),
+    AfterModel.
 
 from_db(Fields) ->
     Map = #{

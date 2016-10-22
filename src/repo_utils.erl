@@ -27,7 +27,7 @@ preload(Link, QList) ->
     fun(Q) -> preload(Link, QList, Q) end.
 
 preload(Link, QList, Q) ->
-    #{links := Links} = q:get(schema, Q),
+    Links = maps:get(links, q:get(schema, Q), #{}),
     q:select(fun(Select, [MD|_]) ->
         {LinkType, Info, IdsMap} = maps:get(Link, Links),
         SubQ = repo:query(Info, [

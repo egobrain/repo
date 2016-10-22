@@ -153,22 +153,23 @@ update_test(_Config) ->
     {ok, #{text := Text2}} = repo:get_one(m_comment, #{id => 1}).
 
 delete_test(_Config) ->
-    [#user{id = 3}] = repo:delete(m_user, #{id => 3}),
+    {ok, [#user{id = 3}]} = repo:delete(m_user, #{id => 3}),
     {error, not_found} = repo:get_one(m_user, #{id => 3}),
     {ok, #user{id=U1Id}=U1} = repo:insert(m_user, #user{login = <<"to delete 1">>}),
-    [U1] = epgpool:with(fun(C) -> repo:delete(C, m_user, #{id => U1Id}) end),
+    {ok, [U1]} = epgpool:with(fun(C) -> repo:delete(C, m_user, #{id => U1Id}) end),
     {ok, U2} = repo:insert(m_user, #user{login = <<"to delete 2">>}),
     Q = repo:query(m_user, [
         q:where(fun([#{login := Login}]) -> Login =:= <<"to delete 2">> end)
     ]),
-    [U2] = repo:delete(Q),
-    [] = repo:delete(Q),
+    {ok, [U2]} = repo:delete(Q),
+    {ok, []} = repo:delete(Q),
+
 
     {ok, U3} = repo:insert(m_user, #user{login = <<"to delete 3">>}),
     Q2 = repo:query(m_user, [
         q:where(fun([#{login := Login}]) -> Login =:= <<"to delete 3">> end)
     ]),
-    [U3] = epgpool:with(fun(C) -> repo:delete(C, Q2) end).
+    {ok, [U3]} = epgpool:with(fun(C) -> repo:delete(C, Q2) end).
 
 query_test(_Config) ->
     Q = repo:query(m_user),
