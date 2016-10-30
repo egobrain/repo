@@ -17,13 +17,6 @@
 -include_lib("equery/include/equery.hrl").
 -include_lib("epgsql/include/epgsql.hrl").
 
--type schema() :: #{
-        fields => #{ atom() => #{} },
-        table => binary()
-    }.
-
--export_type([schema/0]).
-
 query(Model) -> query(Model, []).
 query(Model, QList) -> pipe(Model, QList).
 

@@ -1,6 +1,6 @@
 -module(repo_model).
 
--callback schema() -> repo:schema().
+-callback schema() -> q:schema().
 
 -callback before_save(epgpool:connection(), Model, HookOpts :: any()) -> {ok, Model} | {error, Reason :: any()}.
 -optional_callbacks([before_save/3]).
