@@ -101,7 +101,14 @@ zlist_test(_Config) ->
 
     [
      #user{id = 1 }
-    ] = epgpool:transaction(fun(C) -> repo:zlist(C, m_user, QList, fun zlist:to_list/1) end).
+    ] = epgpool:transaction(fun(C) -> repo:zlist(C, m_user, QList, fun zlist:to_list/1) end),
+
+    try
+        must_throw_exception = repo:zlist(m_user, [
+            q:select(fun([#{id := UserId}]) -> #{id => UserId / 0} end)
+        ], fun zlist:to_list/1)
+    catch throw:{pgsql_exec_error, _} -> ok
+    end.
 
 single_item_test(_Config) ->
     {ok, 4} = repo:get_one(m_user, [q:select(fun([#{id := Id}]) -> pg_sql:max(Id) end)]).
@@ -165,9 +172,15 @@ delete_test(_Config) ->
     Q = repo:query(m_user, [
         q:where(fun([#{login := Login}]) -> Login =:= <<"to delete 2">> end)
     ]),
+    {ok, Post} = repo:insert(m_post, #{
+        header => <<"to delete">>,
+        text => <<"Linked post">>,
+        author_id => U2#user.id
+    }),
+    {error, _} = repo:delete(Q),
+    {ok, [_]} = repo:delete(m_post, #{id => maps:get(id, Post)}),
     {ok, [U2]} = repo:delete(Q),
     {ok, []} = repo:delete(Q),
-
 
     {ok, U3} = repo:insert(m_user, #user{login = <<"to delete 3">>}),
     Q2 = repo:query(m_user, [
