@@ -54,6 +54,23 @@ repl
    ]).
 ```
 
+Custom db type converters
+===
+
+You can implement your own custom dbtype encoders and decoders.
+All you need is to implement repo_types behaviour and set it via `PG_TYPES` macro.
+Example for rebar3:
+
+```erlang
+{overrides, [
+    {override, repo, [
+        {erl_opts, [
+            {d, {'PG_TYPES', my_custom_dbtypes}}
+        ]}
+    ]}
+]}.
+```
+
 Notice
 ===
 
