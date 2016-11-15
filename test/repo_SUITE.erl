@@ -17,7 +17,8 @@
          preload_test/1,
          set_test/1,
          hooks_test/1,
-         errors_test/1
+         errors_test/1,
+         db_types_test/1
         ]).
 
 -include_lib("common_test/include/ct.hrl").
@@ -45,7 +46,8 @@ all() ->
      preload_test,
      set_test,
      hooks_test,
-     errors_test
+     errors_test,
+     db_types_test
     ].
 
 all_test(_Config) ->
@@ -304,3 +306,10 @@ errors_test(_Config) ->
     {error, _} = repo:insert(m_user, #user{}),
 
     {error, not_found} = repo:update(m_user, #user{id = 999, login = <<"Samson">>}).
+
+db_types_test(_) ->
+    %% Encoders
+    1 = (repo_types:get_encoder(any))(1),
+
+    %% Decoders
+    1 = (repo_types:get_decoder(any))(1).
