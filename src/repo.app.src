@@ -7,11 +7,9 @@
    [
     kernel,
     stdlib,
-    lager,
     epgpool,
     equery,
-    zlist,
-    jiffy
+    zlist
    ]},
   {env, [
       {fetch_by, 100}
