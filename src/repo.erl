@@ -17,6 +17,8 @@
 -include_lib("equery/include/equery.hrl").
 -include_lib("epgsql/include/epgsql.hrl").
 
+-include("config.hrl").
+
 query(Model) -> query(Model, []).
 query(Model, QList) -> pipe(Model, QList).
 
@@ -317,20 +319,18 @@ get_hook(Model, Name, Arity) when is_atom(Model) ->
     end,
     fun Module:Name/Arity.
 
-encoder(Json) when Json =:= jsonb; Json =:= json -> fun jiffy:encode/1;
-encoder(_) -> fun id/1.
+encoder(Type) ->
+    Encoder = ?PG_TYPES:get_encoder(Type),
+    fun (null) -> null; (V) -> Encoder(V) end.
 
 decoder(Type) ->
     Decoder = decoder_(Type),
     fun (null) -> null; (V) -> Decoder(V) end.
-decoder_(Json) when Json =:= jsonb; Json =:= json -> fun (V) -> jiffy:decode(V, [return_maps]) end;
 decoder_({record, FieldsData}) -> get_constructor(FieldsData);
 decoder_({array, SubType}) ->
     TypeDecoder = decoder(SubType),
     fun(D) -> lists:map(TypeDecoder, D) end;
-decoder_(_) -> fun id/1.
-
-id(A) -> A.
+decoder_(Type) -> ?PG_TYPES:get_decoder(Type).
 
 to_sql(QAst) ->
     {Sql, Args} = qast:to_sql(QAst),
