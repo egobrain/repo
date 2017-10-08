@@ -24,34 +24,31 @@ query(Model, QList) -> pipe(Model, QList).
 
 %% === all/1,2,3 ===============================================================
 
-all(Q) ->
-    all_(fun epgpool:with/1, Q).
-all(C, Q) when is_pid(C) ->
-    all_(wrap_connection(C), Q);
-all(Model, QList) ->
-    all_(fun epgpool:with/1, Model, QList).
-all(C, Model, QList) when is_pid(C) ->
-    all_(wrap_connection(C), Model, QList).
+all(Info) ->
+    all_(fun epgpool:with/1, query(Info)).
+all(C, Info) when is_pid(C) ->
+    all_(wrap_connection(C), query(Info));
+all(Info, QList) ->
+    all_(fun epgpool:with/1, query(Info, QList)).
+all(C, Info, QList) when is_pid(C) ->
+    all_(wrap_connection(C), query(Info, QList)).
 
-all_(FunC, Model, QList) ->
-    all_(FunC, query(Model, QList)).
-
-all_(FunC, Q) ->
-    {Sql, Args, Fields} = to_sql(qsql:select(Q)),
+all_(FunC, Query) ->
+    {Sql, Args, Fields} = to_sql(qsql:select(Query)),
     {ok, _Columns, Rows} = FunC(fun(C) -> epgsql:equery(C, Sql, Args) end),
     Constructor = get_constructor(Fields),
     [Constructor(R) || R <- Rows].
 
 %% === zlist/2,3,4 =============================================================
 
-zlist(Q, FunZ) ->
-    zlist_(fun epgpool:transaction/1, Q, FunZ).
-zlist(C, Q, FunZ) when is_pid(C) ->
-    zlist_(wrap_connection(C), Q, FunZ);
-zlist(Model, QList, FunZ) ->
-    zlist_(fun epgpool:transaction/1, query(Model, QList), FunZ).
-zlist(C, Model, QList, FunZ) when is_pid(C) ->
-    zlist_(wrap_connection(C), query(Model, QList), FunZ).
+zlist(Info, FunZ) ->
+    zlist_(fun epgpool:transaction/1, query(Info), FunZ).
+zlist(C, Info, FunZ) when is_pid(C) ->
+    zlist_(wrap_connection(C), query(Info), FunZ);
+zlist(Info, QList, FunZ) ->
+    zlist_(fun epgpool:transaction/1, query(Info, QList), FunZ).
+zlist(C, Info, QList, FunZ) when is_pid(C) ->
+    zlist_(wrap_connection(C), query(Info, QList), FunZ).
 
 zlist_(FunC, Q, FunZ) ->
     {Sql, Args, Fields} = to_sql(qsql:select(Q)),
@@ -82,17 +79,15 @@ zlist(C, Statement, Portal, NRows, Constructor) ->
 
 %% === get_one/1,2,3 ===========================================================
 
-get_one(Q) ->
-    get_one_(fun epgpool:with/1, Q).
-get_one(C, Q) when is_pid(C) ->
-    get_one_(wrap_connection(C), Q);
-get_one(Model, QList) ->
-    get_one_(fun epgpool:with/1, Model, QList).
-get_one(C, Model, QList) when is_pid(C) ->
-    get_one_(wrap_connection(C), Model, QList).
+get_one(Info) ->
+    get_one_(fun epgpool:with/1, query(Info)).
+get_one(C, Info) when is_pid(C) ->
+    get_one_(wrap_connection(C), query(Info));
+get_one(Info, QList) ->
+    get_one_(fun epgpool:with/1, query(Info, QList)).
+get_one(C, Info, QList) when is_pid(C) ->
+    get_one_(wrap_connection(C), query(Info, QList)).
 
-get_one_(FunC, Model, QList) ->
-    get_one_(FunC, pipe(Model, QList)).
 get_one_(FunC, Q) ->
     case all_(FunC, Q) of
         [] -> {error, not_found};
@@ -102,44 +97,58 @@ get_one_(FunC, Q) ->
 
 %% === insert/2,3,4 =========================================================
 
-insert(Model, M) ->
-    insert(Model, M, undefined).
-insert(C, Model, M) when is_pid(C) ->
-    insert(C, Model, M, undefined);
-insert(Model, M, HookOpts) ->
-    insert_(fun epgpool:transaction/1, Model, M, HookOpts).
-insert(C, Model, M, HookOpts) ->
-    insert_(wrap_connection(C), Model, M, HookOpts).
+insert(Info, M) ->
+    insert_(fun epgpool:transaction/1, Info, M, undefined).
+insert(C, Info, M) when is_pid(C) ->
+    insert_(wrap_connection(C), Info, M, undefined);
+insert(Info, M, HookOpts) ->
+    insert_(fun epgpool:transaction/1, Info, M, HookOpts).
+insert(C, Info, M, HookOpts) ->
+    insert_(wrap_connection(C), Info, M, HookOpts).
 
-insert_(FunC, Model, M, HookOpts) ->
-    store(FunC, fun qsql:insert/1, Model, M, HookOpts).
+insert_(FunC, Info, M, HookOpts) ->
+    store(FunC, fun qsql:insert/1, Info, M, HookOpts).
 
 %% === upsert/2,3,4 =========================================================
 
-upsert(Model, M) ->
-    upsert(Model, M, undefined).
-upsert(C, Model, M) when is_pid(C) ->
-    upsert(C, Model, M, undefined);
-upsert(Model, M, HookOpts) ->
-    upsert_(fun epgpool:transaction/1, Model, M, HookOpts).
-upsert(C, Model, M, HookOpts) ->
-    upsert_(wrap_connection(C), Model, M, HookOpts).
+upsert(Info, M) ->
+    upsert(Info, M, undefined).
+upsert(C, Info, M) when is_pid(C) ->
+    upsert(C, Info, M, undefined);
+upsert(Info, M, HookOpts) ->
+    upsert_(fun epgpool:transaction/1, Info, M, HookOpts).
+upsert(C, Info, M, HookOpts) ->
+    upsert_(wrap_connection(C), Info, M, HookOpts).
 
-upsert_(FunC, Model, M, HookOpts) ->
-    store(FunC, fun qsql:upsert/1, Model, M, HookOpts).
+upsert_(FunC, Info, M, HookOpts) ->
+    Query = query(Info),
+    #{fields := Fields} = q:get(schema, Query),
+    IndexFields = maps:fold(
+        fun (K, #{index := true}, Acc) -> [K|Acc];
+            (_, _, Acc) -> Acc
+        end, [], Fields),
+    FieldsToUpdate = maps:fold(
+        fun (_, #{readOnly := true}, Acc) -> Acc;
+            (K, _, Acc) -> [K|Acc]
+        end, [], Fields),
+
+    QueryR = q:on_conflict(IndexFields, fun(Data) ->
+        maps:with(FieldsToUpdate, lists:last(Data))
+    end, Query),
+    insert_(FunC, QueryR, M, HookOpts).
 
 %% === update/2,3 ===========================================================
 
-update(Model, M) ->
-    update(Model, M, undefined).
-update(C, Model, M) when is_pid(C) ->
-    update(C, Model, M, undefined);
-update(Model, M, HookOpts) ->
-    update_(fun epgpool:transaction/1, Model, M, HookOpts).
-update(C, Model, M, HookOpts) ->
-    update_(wrap_connection(C), Model, M, HookOpts).
+update(Info, M) ->
+    update_(fun epgpool:transaction/1, Info, M, undefined).
+update(C, Info, M) when is_pid(C) ->
+    update_(wrap_connection(C), Info, M, undefined);
+update(Info, M, HookOpts) ->
+    update_(fun epgpool:transaction/1, Info, M, HookOpts).
+update(C, Info, M, HookOpts) ->
+    update_(wrap_connection(C), Info, M, HookOpts).
 
-update_(FunC, Model, M, HookOpts) ->
+update_(FunC, Info, M, HookOpts) ->
     store(FunC, fun(Query) ->
        #{fields := Fields} = q:get(schema, Query),
         Q = pipe(Query, [
@@ -152,24 +161,23 @@ update_(FunC, Model, M, HookOpts) ->
                 end)
         ]),
         qsql:update(Q)
-    end, Model, M, HookOpts).
+    end, Info, M, HookOpts).
 
 %% === set/2,3 ===========================================================
 
-set(Model, QList) ->
-    set_(fun epgpool:transaction/1, Model, QList).
-set(C, Model, QList) when is_pid(C) ->
-    set_(wrap_connection(C), Model, QList).
+set(Info, QList) ->
+    set_(fun epgpool:transaction/1, query(Info, QList)).
+set(C, Info, QList) when is_pid(C) ->
+    set_(wrap_connection(C), query(Info, QList)).
 
-set_(FunC, Model, QList) ->
-    Q = query(Model, QList),
-    #{fields := Fields} = q:get(schema, Q),
+set_(FunC, Query) ->
+    #{fields := Fields} = q:get(schema, Query),
     QR = q:set(fun(S, _) ->
         maps:map(fun(K, V) ->
             Type = maps:get(type, maps:get(K, Fields), undefined),
             (encoder(Type))(V)
         end, S)
-    end, Q),
+    end, Query),
     {Sql, Args, RFields} = to_sql(qsql:update(QR)),
     Constructor = get_constructor(RFields),
     FunC(fun(C) ->
@@ -181,26 +189,25 @@ set_(FunC, Model, QList) ->
 
 %% === delete/1,2,3,4 =========================================================
 
-delete(Q) ->
-    delete(get_model(Q), Q, undefined).
-delete(C, Q) when is_pid(C) ->
-    delete(C, get_model(Q), Q, undefined);
-delete(Model, QList) ->
-    delete(Model, QList, undefined).
-delete(C, Model, QList) when is_pid(C) ->
-    delete(C, Model, QList, undefined);
-delete(Model, QList, HookOpts) ->
-    delete_(fun epgpool:transaction/1, Model, QList, HookOpts).
-delete(C, Model, QList, HookOpts) ->
-    delete_(wrap_connection(C), Model, QList, HookOpts).
+delete(Info) ->
+    delete_(fun epgpool:transaction/1, query(Info), undefined).
+delete(C, Info) when is_pid(C) ->
+    delete_(wrap_connection(C), query(Info), undefined);
+delete(Info, QList) ->
+    delete_(fun epgpool:transaction/1, query(Info, QList), undefined).
+delete(C, Info, QList) when is_pid(C) ->
+    delete_(wrap_connection(C), query(Info, QList), undefined);
+delete(Info, QList, HookOpts) ->
+    delete_(fun epgpool:transaction/1, query(Info, QList), HookOpts).
+delete(C, Info, QList, HookOpts) ->
+    delete_(wrap_connection(C), query(Info, QList), HookOpts).
 
-delete_(FunC, Model, QList, HookOpts) when is_list(QList); is_map(QList) ->
-    delete_(FunC, Model, pipe(Model, QList), HookOpts);
-delete_(FunC, Model, Q, HookOpts) ->
+delete_(FunC, Query, HookOpts) ->
+    Model = get_model(Query),
     BeforeHook = get_hook(Model, before_delete, 3),
     AfterHook = get_hook(Model, after_delete, 3),
     FunC(fun(C) when is_pid(C) ->
-        case BeforeHook(C, Q, HookOpts) of
+        case BeforeHook(C, Query, HookOpts) of
             {ok, Q1} ->
                 {Sql, Args, Fields} = to_sql(qsql:delete(Q1)),
                 Constructor = get_constructor(Fields),
@@ -223,8 +230,8 @@ delete_(FunC, Model, Q, HookOpts) ->
 get_model(Q) ->
     maps:get(model, q:get(schema, Q), undefined).
 
-pipe(Model, QList) when is_atom(Model); is_map(Model) ->
-    pipe(q:from(Model), QList);
+pipe(Info, QList) when is_atom(Info); is_map(Info) ->
+    pipe(q:from(Info), QList);
 pipe(Query, QList) ->
     q:pipe(Query, where(QList)).
 
@@ -242,13 +249,13 @@ maybe_list(M, Fun) ->
         {error, [{_N, R}]} -> {error, R}
     end.
 
-store(FunC, SqlF, Model, DataMaybeList, HookOpts) ->
+store(FunC, SqlF, Info, DataMaybeList, HookOpts) ->
     maybe_list(DataMaybeList, fun(DataList) ->
-        store_(FunC, SqlF, Model, DataList, HookOpts)
+        store_(FunC, SqlF, Info, DataList, HookOpts)
     end).
 
-store_(FunC, SqlF, Model, DataList, HookOpts) ->
-    Query = pipe(Model, [
+store_(FunC, SqlF, Info, DataList, HookOpts) ->
+    Query = pipe(Info, [
         fun(Q) ->
             #{fields := Fields} = q:get(schema, Q),
             q:set(fun(_) ->
@@ -260,6 +267,7 @@ store_(FunC, SqlF, Model, DataList, HookOpts) ->
         end
     ]),
     {Sql, ArgsFields, ReturnFieldsData} = to_sql(SqlF(Query)),
+    Model = get_model(Query),
     BeforeHook = get_hook(Model, before_save, 3),
     AfterHook = get_hook(Model, after_save, 4),
     ToDb = get_hook(Model, to_db, 1),
@@ -273,6 +281,7 @@ store_(FunC, SqlF, Model, DataList, HookOpts) ->
                 QueryResult = epgsql:execute_batch(C, QueryData),
                 enumerate_error_writer_map(
                     fun ({{ok, 0}, _}) -> {error, not_found};
+                        ({{ok, 0, []}, _}) -> {error, not_found};
                         ({{ok, _, [R]}, M}) ->
                             Result = Constructor(R),
                             UpdatedResult = AfterHook(C, M, Result, HookOpts),

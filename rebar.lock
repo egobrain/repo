@@ -1,18 +1,18 @@
 {"1.1.0",
-[{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.1.0">>},0},
- {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.2.0">>},1},
- {<<"equery">>,{pkg,<<"equery">>,<<"0.9.1">>},0},
+[{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.1.1">>},0},
+ {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.3.0">>},1},
+ {<<"equery">>,{pkg,<<"equery">>,<<"0.12.0">>},0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.8">>},2},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.2.1">>},1},
  {<<"poolboy">>,{pkg,<<"poolboy">>,<<"1.4.2">>},1},
- {<<"zlist">>,{pkg,<<"zlist">>,<<"1.0.3">>},0}]}.
+ {<<"zlist">>,{pkg,<<"zlist">>,<<"1.1.1">>},0}]}.
 [
 {pkg_hash,[
- {<<"epgpool">>, <<"C6DD036B5A60AAA271A5A72CDBA99C8C396CF497E3144A06CD7CD2F54CCB233D">>},
- {<<"epgsql">>, <<"2277244364628CCFC271A843F4B014729D0799BCB99B70C2216BCFD6DD6B409E">>},
- {<<"equery">>, <<"11EFDAE4186BC168370C64FF33522AC0EEAA4F855B65C9D06E499B6AC6656175">>},
+ {<<"epgpool">>, <<"A50C1AB0797FD7280316D2E29490F2213C87BC5B264EFDF6CB4BF6D4AEB19374">>},
+ {<<"epgsql">>, <<"974A578340E52012CBAB820CE756E7ED1DF1BAF0110C59A6753D8337A2CF9454">>},
+ {<<"equery">>, <<"DC11305FEBDFBCD8B1CEEA5702925947451F8C29E2897E4AC1A7BEA746A7C0A4">>},
  {<<"goldrush">>, <<"2024BA375CEEA47E27EA70E14D2C483B2D8610101B4E852EF7F89163CDB6E649">>},
  {<<"lager">>, <<"EEF4E18B39E4195D37606D9088EA05BF1B745986CF8EC84F01D332456FE88D17">>},
  {<<"poolboy">>, <<"619519C7708DD001CE9B61908218D03FF582C3BA44A1E129D694376C2B332D87">>},
- {<<"zlist">>, <<"81E3E4E7BEB86D52E767CAF42597C319256ACA3E69356C413C785579233D4F7D">>}]}
+ {<<"zlist">>, <<"D0F251B893EEB1DB241ABA9E4394000CD5424971DFC4E0333258B11291CD7772">>}]}
 ].
