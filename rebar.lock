@@ -1,7 +1,7 @@
 {"1.1.0",
 [{<<"epgpool">>,{pkg,<<"epgpool">>,<<"1.1.1">>},0},
  {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.3.0">>},1},
- {<<"equery">>,{pkg,<<"equery">>,<<"0.12.0">>},0},
+ {<<"equery">>,{pkg,<<"equery">>,<<"0.12.1">>},0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.8">>},2},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.2.1">>},1},
  {<<"poolboy">>,{pkg,<<"poolboy">>,<<"1.4.2">>},1},
@@ -10,7 +10,7 @@
 {pkg_hash,[
  {<<"epgpool">>, <<"A50C1AB0797FD7280316D2E29490F2213C87BC5B264EFDF6CB4BF6D4AEB19374">>},
  {<<"epgsql">>, <<"974A578340E52012CBAB820CE756E7ED1DF1BAF0110C59A6753D8337A2CF9454">>},
- {<<"equery">>, <<"DC11305FEBDFBCD8B1CEEA5702925947451F8C29E2897E4AC1A7BEA746A7C0A4">>},
+ {<<"equery">>, <<"92A43416E67733F3A17F1A653FE7674DBDA3D454EFED672916F9C7D344A3E93E">>},
  {<<"goldrush">>, <<"2024BA375CEEA47E27EA70E14D2C483B2D8610101B4E852EF7F89163CDB6E649">>},
  {<<"lager">>, <<"EEF4E18B39E4195D37606D9088EA05BF1B745986CF8EC84F01D332456FE88D17">>},
  {<<"poolboy">>, <<"619519C7708DD001CE9B61908218D03FF582C3BA44A1E129D694376C2B332D87">>},
