@@ -10,6 +10,7 @@
          single_item_test/1,
          get_one_test/1,
          insert_test/1,
+         manual_on_conflict_test/1,
          upsert_test/1,
          update_test/1,
          delete_test/1,
@@ -39,6 +40,7 @@ all() ->
      single_item_test,
      get_one_test,
      insert_test,
+     manual_on_conflict_test,
      upsert_test,
      update_test,
      delete_test,
@@ -137,6 +139,18 @@ insert_test(_Config) ->
     {ok, []} = repo:insert(m_user, []),
     {error, r1} = repo:insert(m_user, #user{login = <<"Yk">>}, #{error => r1}),
     {error, [{1, r1}]} = repo:insert(m_user, [#user{login = <<"Yk">>}], #{error => r1}).
+
+manual_on_conflict_test(_Config) ->
+    {ok, [#user{id = Id, login = <<"Ins">>}=U]} =
+        repo:insert(m_user, [#user{login = <<"Ins">>, id = <<"ignored">>}]),
+    NewLogin = <<"NewIns">>,
+    {ok, [#user{id = Id, login = NewLogin}=U2]} =
+        repo:insert(repo:query(m_user, [
+            q:on_conflict([login], fun([#{id := OldId}, Excluded]) ->
+                Excluded#{id => OldId, login => NewLogin}
+            end)
+        ]), [U]),
+    {ok, U2} = repo:get_one(m_user, #{id => Id}).
 
 upsert_test(_Config) ->
     {ok, [#{id := Id, value := <<"up_created">>}=U]} =

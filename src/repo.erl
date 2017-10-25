@@ -155,7 +155,7 @@ update_(FunC, Info, M, HookOpts) ->
             q:where(fun([Data|_]) ->
                 maps:fold(
                     fun (IndexF, #{index := true}=Opts, S) ->
-                            S andalso maps:get(IndexF, Data) =:= {IndexF, Opts};
+                            S andalso maps:get(IndexF, Data) =:= getter(IndexF, Opts);
                         (_, _, S) -> S
                     end, true, Fields)
                 end)
@@ -261,7 +261,7 @@ store_(FunC, SqlF, Info, DataList, HookOpts) ->
             q:set(fun(_) ->
                 maps:fold(
                     fun (_, #{readOnly := true}, S) -> S;
-                        (F, Opts, S) -> maps:put(F, {F, Opts}, S)
+                        (F, Opts, S) -> maps:put(F, getter(F, Opts), S)
                     end, #{}, Fields)
             end, Q)
         end
@@ -294,6 +294,15 @@ store_(FunC, SqlF, Info, DataList, HookOpts) ->
         end
     end).
 
+getter(F, Opts) ->
+    Encoder = encoder(maps:get(type, Opts, undefined)),
+    fun(M) ->
+        case maps:find(F, M) of
+            {ok, V} -> Encoder(V);
+            error -> null
+        end
+    end.
+
 get_constructor({model, Model, FieldsData}) when is_list(FieldsData) ->
     {Fields, FieldsOpts} = lists:unzip(FieldsData),
     Decoders = lists:map(fun(Opts) ->
@@ -312,14 +321,10 @@ get_constructor(FieldType) ->
     fun({V}) -> Decoder(V) end.
 
 data(FieldsData, M) ->
-    lists:map(fun({F, Opts}) ->
-        case maps:find(F, M) of
-            {ok, V} ->
-                Encoder = encoder(maps:get(type, Opts, undefined)),
-                Encoder(V);
-            _ -> null
-        end
-    end, FieldsData).
+    lists:map(
+        fun (Getter) when is_function(Getter, 1) -> Getter(M);
+            (Value) -> Value
+        end, FieldsData).
 
 get_hook(Model, Name, Arity) when is_atom(Model) ->
     Module = case erlang:function_exported(Model, Name, Arity) of
